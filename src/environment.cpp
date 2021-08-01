@@ -52,7 +52,7 @@ void simpleHighway(pcl::visualization::PCLVisualizer::Ptr& viewer)
 //    renderPointCloud(viewer, input_cloud, "lidar");
     // TODO:: Create point processor
     ProcessPointClouds<pcl::PointXYZ> pointProcessor;
-    std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr> segmentCloud = pointProcessor.SegmentPlane(input_cloud, 100, 0.2);
+    std::pair<pcl::PointCloud<pcl::PointXYZ>::Ptr, pcl::PointCloud<pcl::PointXYZ>::Ptr> segmentCloud = pointProcessor.SegmentPlane(input_cloud, 10, 0.3);
     std::cout<<"Simple Highway from environment executed: "<<std::endl;
     renderPointCloud(viewer, segmentCloud.first, "obstacleCloud", Color(1,0,0));
 //    renderPointCloud(viewer, segmentCloud.second, "planeCloud", Color(0,1,0));
@@ -93,7 +93,7 @@ void cityBlock(pcl::visualization::PCLVisualizer::Ptr& viewer, ProcessPointCloud
     pcl::PointCloud<pcl::PointXYZI>::Ptr filterCloud = pointProcessorI->FilterCloud(inputCloud, 0.25, Eigen::Vector4f(-11,-6,-2,1), Eigen::Vector4f(35,6,2,1));
 
 
-    auto segmentCloud = pointProcessorI->SegmentPlane(filterCloud, 100, 0.2);
+    auto segmentCloud = pointProcessorI->SegmentPlane(filterCloud, 100, 0.5);
 
 
     if(renderScene)
@@ -177,6 +177,6 @@ int main (int dfgargc, char** argv)
         if(streamIterator == stream.end())
             streamIterator = stream.begin();
 
-        viewer->spinOnce ();
+        viewer->spinOnce (500);
     }
 }

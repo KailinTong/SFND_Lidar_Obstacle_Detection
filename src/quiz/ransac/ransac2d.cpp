@@ -121,38 +121,41 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
 	int size_p = cloud->points.size();
 	// For max iterations
 	int max_num_inliers = 0;
-    std::unordered_set<int> inliersTemp;
 
     for(auto iter = 0; iter < maxIterations; iter++) {
-        int num_inliers = 0;
+        std::unordered_set<int> inliersTemp;
 
-        // Randomly sample subset and fit line
-        int r_1 = rand() % (size_p - 0) + 0; // 取得[a,b)的随机整数，使用(rand() % (b-a))+ a （结果值含a不含b）。
-        int r_2 = rand() % (size_p - 0) + 0;
-        int r_3 = rand() % (size_p - 0) + 0;
+        while(inliersTemp.size() < 3) 	//points must be more than 3 otherwise there are segmentation error
+            inliersTemp.insert(rand() % (size_p - 0) + 0);
 
-        auto p_1 = cloud->points.at(r_1);
-        auto p_2 = cloud->points.at(r_2);
-        auto p_3 = cloud->points.at(r_3);
-        double x1 = p_1.x;
-        double y1 = p_1.y;
-        double z1 = p_1.z;
-        double x2 = p_2.x;
-        double y2 = p_2.y;
-        double z2 = p_2.z;
-        double x3 = p_3.x;
-        double y3 = p_3.y;
-        double z3 = p_3.z;
+        auto itr = inliersTemp.begin();
 
-        double i = (y2 - y1) * (z3 - z1) - (z2 - z1) * (y3 - y1);
-        double j = (z2 - z1) * (x3 - x1) - (x2 - x1) * (z3 - z1);
-        double k = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
+        auto p_1 = cloud->points.at(*itr);
+        itr++;
+        auto p_2 = cloud->points.at(*itr);
+        itr++;
+        auto p_3 = cloud->points.at(*itr);
+
+        float x1 = p_1.x;
+        float y1 = p_1.y;
+        float z1 = p_1.z;
+        float x2 = p_2.x;
+        float y2 = p_2.y;
+        float z2 = p_2.z;
+        float x3 = p_3.x;
+        float y3 = p_3.y;
+        float z3 = p_3.z;
+
+
+
+        float A = (y2 - y1) * (z3 - z1) - (z2 - z1) * (y3 - y1);
+        float B = (z2 - z1) * (x3 - x1) - (x2 - x1) * (z3 - z1);
+        float C = (x2 - x1) * (y3 - y1) - (y2 - y1) * (x3 - x1);
 //          v1 = < x2 - x1, y2 - y1, z2 - z1 >
 //          v2 = < x3 - x1, y3 - y1, z3 - z1 >
 //        v1 \times v2 = <(y2−y1)(z3−z1)−(z2−z1)(y3−y1), (z2−z1)(x3−x1)−(x2−x1)(z3−z1), (x2−x1)(y3−y1)−(y2−y1)(x3−x1)>
 
-        double A = i; double B = j; double C = k;
-        double D = - (i * x1 + j * y1 + k * z1);
+        float D = - (A * x1 + B * y1 + C * z1);
 //        A = i,
 //        B = j,
 //        C = k,
@@ -160,23 +163,25 @@ std::unordered_set<int> Ransac(pcl::PointCloud<pcl::PointXYZ>::Ptr cloud, int ma
 
 
         // Measure distance between every point and fitted line  d = |Ax+By+C|/sqrt(A^2+B^2)
-        for (int n = 0; n < cloud->points.size(); n++) {
-            auto point = cloud->points.at(n);
+        for (int index = 0; index < cloud->points.size(); index++) {
+
+            if(inliersTemp.count(index) > 0){  // the index is already in inliersTemp
+                continue;
+            }
+
+            auto point = cloud->points.at(index);
             double d = std::abs(A * point.x + B * point.y + C * point.z + D) / std::sqrt(A * A + B * B + C * C);
 
 //            d = |A*x+B*y+C*z+D|/sqrt(A^2+B^2+C^2)
 
             if (d < distanceTol) {
-                num_inliers++;
-                inliersTemp.emplace(n);
+                inliersTemp.emplace(index);
             }
         }
         // If distance is smaller than threshold count it as inlier
 
-        if (num_inliers > max_num_inliers) {
-            max_num_inliers = num_inliers;
+        if (inliersTemp.size() > inliersResult.size()) {
             inliersResult.swap(inliersTemp);
-            inliersTemp.clear();
         }
     }
 
@@ -196,10 +201,10 @@ int main ()
 
 	// Create data
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloud = CreateData3D();
-	
+
 
 	// TODO: Change the max iteration and distance tolerance arguments for Ransac function
-	std::unordered_set<int> inliers = Ransac(cloud, 50, 0.5);
+	std::unordered_set<int> inliers = Ransac(cloud, 10, 0.3);
 
 	pcl::PointCloud<pcl::PointXYZ>::Ptr  cloudInliers(new pcl::PointCloud<pcl::PointXYZ>());
 	pcl::PointCloud<pcl::PointXYZ>::Ptr cloudOutliers(new pcl::PointCloud<pcl::PointXYZ>());
@@ -225,10 +230,10 @@ int main ()
   	{
   		renderPointCloud(viewer,cloud,"data");
   	}
-	
+
   	while (!viewer->wasStopped ())
   	{
   	  viewer->spinOnce ();
   	}
-  	
+
 }

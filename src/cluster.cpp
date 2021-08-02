@@ -8,7 +8,7 @@ void proximity(const std::vector<std::vector<float>> &points, int point_id, std:
     processed.at(point_id) = true;
     auto point = points.at(point_id);
     cluster.emplace_back(point_id);
-    auto ids = tree->search(point, distanceTol, 2);
+    auto ids = tree->search(point, distanceTol, 3);
 
     for(auto &id: ids){
         if(!processed.at(id)){
@@ -32,7 +32,6 @@ euclideanCluster(const std::vector<std::vector<float>> &points, KdTree *tree, fl
         if(!processed.at(i)){
             std::vector<int> cluster;   // create a new cluster
             proximity(points, i, cluster, processed, tree, distanceTol);
-            clusters.emplace_back(cluster);
             if(cluster.size() < minSize) // TODO maybe this will neglect some useful clusters??
                 continue;
             if(cluster.size() > maxSize)
